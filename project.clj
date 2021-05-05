@@ -1,19 +1,37 @@
-(defproject circleci/bond "0.4.0"
+(defproject circleci/bond "0.5.0"
   :description "Spying library for testing"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+
   :dependencies []
-  :plugins [[lein-test-out "0.3.1" :exclusions [org.clojure/clojure]]
-            [lein-cljsbuild "1.1.3"]
-            [lein-cloverage "1.0.9"]]
-  :cljsbuild {:builds [{:source-paths ["src" "test"]
-                        :compiler {:output-dir "resources/public/js/out"
-                                   :output-to "resources/public/js/test-bond.js"
-                                   :optimizations :whitespace
-                                   :pretty-print true}}]
-              :test-commands {"unit" ["node_modules/phantomjs-prebuilt/bin/phantomjs"
-                                      "resources/test/phantom/runner.js"
-                                      "resources/test/test.html"]}}
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
-                                  [org.clojure/clojurescript "1.7.228"]
-                                  [com.cemerick/clojurescript.test "0.3.0"]]}})
+
+  :plugins [[lein-cloverage "1.2.2"]
+            [jonase/eastwood "0.3.14" :exclusions [org.clojure/clojure]]]
+
+  :eastwood {:exclude-linters
+             [;; clj-kondo will catch the wrong-arity cases
+              ;; (eastwood won't let us turn this lint off for a single namespace)
+              :wrong-arity]}
+
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.10.2"]
+                                  [lambdaisland/kaocha "0.0-601"]
+                                  [lambdaisland/kaocha-cloverage "0.0-41"]
+                                  [lambdaisland/kaocha-junit-xml "0.0-70"]]}}
+
+  :aliases {"test"    ["run" "-m" "kaocha.runner"
+                       "--no-randomize"]
+            "test-ci" ["test"
+                       "--plugin" "cloverage"
+                       "--codecov" "--no-cov-html" "--no-cov-summary"
+                       "--plugin" "kaocha.plugin/profiling"
+                       "--plugin" "kaocha.plugin/junit-xml"
+                       "--junit-xml-file" "target/test-results/results.xml"]}
+
+  :repositories [["releases" {:url "https://clojars.org/repo"
+                              :username :env/clojars_username
+                              :password :env/clojars_token
+                              :sign-releases false}]
+                 ["snapshots" {:url "https://clojars.org/repo"
+                               :username :env/clojars_username
+                               :password :env/clojars_token
+                               :sign-releases false}]])
